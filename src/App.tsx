@@ -11,7 +11,7 @@ export function App() {
       <Button variant="secondary" />
       <Button variant="danger" />
       <Button variant="success" />
-      asdfasdf
+
       <GlobalStyle />
     </ThemeProvider>
   );
