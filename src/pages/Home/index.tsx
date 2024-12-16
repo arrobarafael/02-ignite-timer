@@ -2,7 +2,8 @@ import { Play } from 'phosphor-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as zod from 'zod';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { differenceInSeconds } from 'date-fns';
 
 import {
   CountdownContainer,
@@ -26,13 +27,21 @@ const newCycleFormValidationSchema = zod.object({
 interface Cycle {
   id: string;
   task: string;
-  minuteAmount: number;
+  minutesAmount: number;
+  startDate: Date;
 }
+
+type NewCycleFormData = zod.infer<typeof newCycleFormValidationSchema>; //substitui a interface feita manualmente
+
+// interface NewCycleFormData {
+//   task: string;
+//   minutesAmount: number;
+// }
 
 export function Home() {
   const [cycles, setCycles] = useState<Cycle[]>([]);
   const [activeCycleId, setActiveCycleId] = useState<string | null>(null);
-  const [amountSecondsPassed, setAmountSecondsPasser] = useState(0);
+  const [amountSecondsPassed, setAmountSecondsPassed] = useState(0);
 
   const { register, handleSubmit, watch, formState, reset } =
     useForm<NewCycleFormData>({
@@ -43,12 +52,17 @@ export function Home() {
       },
     });
 
-  // interface NewCycleFormData {
-  //   task: string;
-  //   minutesAmount: number;
-  // }
+  const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId);
 
-  type NewCycleFormData = zod.infer<typeof newCycleFormValidationSchema>; //substitui a interface feita manualmente
+  useEffect(() => {
+    if (activeCycle) {
+      setInterval(() => {
+        setAmountSecondsPassed(
+          differenceInSeconds(new Date(), activeCycle.startDate)
+        );
+      }, 1000);
+    }
+  }, [activeCycle]);
 
   function handleCreateNewCycle(data: NewCycleFormData) {
     const id = String(new Date().getTime());
@@ -57,6 +71,7 @@ export function Home() {
       id,
       task: data.task,
       minutesAmount: data.minutesAmount,
+      startDate: new Date(),
     };
 
     setCycles((state) => [...state, newCycle]);
@@ -64,9 +79,6 @@ export function Home() {
 
     reset();
   }
-
-  const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId);
-  console.log('activeCycle', activeCycle);
 
   const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0;
   const currentSeconds = activeCycle ? totalSeconds - amountSecondsPassed : 0;
@@ -76,8 +88,6 @@ export function Home() {
 
   const minutes = String(minutesAmount).padStart(2, '0');
   const seconds = String(secondsAmount).padStart(2, '0');
-
-  console.log(activeCycle);
 
   const task = watch('task');
   const isSubmitDisabled = !task;
